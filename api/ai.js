@@ -14,7 +14,6 @@ const DEV_WATERMARKS = [
 ];
 
 export default async function handler(req) {
-  // GLOBAL ERROR TRAP: Prevents the 500 Vercel Crash Page
   try {
     const startTime = Date.now();
     const traceId = generateTraceId();
@@ -27,16 +26,13 @@ export default async function handler(req) {
     const url = new URL(req.url);
     
     if (req.method === 'POST') {
-      if (req.body) {
-        const textBody = await req.text();
-        if (textBody) {
-          try {
-            const body = JSON.parse(textBody);
-            prompt = body.prompt || body.text || body.query || "";
-          } catch(e) {
-            prompt = textBody; // Fallback if raw text is sent
-          }
-        }
+      const textBody = await req.text();
+      if (textBody) {
+        try { 
+          const b = JSON.parse(textBody);
+          prompt = b.prompt || b.text || b.query || ""; 
+        } 
+        catch(e) { prompt = textBody; }
       }
     } else if (req.method === 'GET') {
       prompt = url.searchParams.get('prompt') || url.searchParams.get('q') || "";
@@ -47,7 +43,7 @@ export default async function handler(req) {
         JSON.stringify({ 
           status: "active", 
           owner: "@lakshitpatidar",
-          message: "Prime System Online. All modules loaded correctly."
+          message: "V13 Turbo Online. Engine ready."
         }, null, 2), 
         { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
       );
@@ -57,7 +53,7 @@ export default async function handler(req) {
     const firewallCheck = checkInputFirewall(prompt);
 
     if (firewallCheck.triggered) {
-      await sleep(Math.floor(Math.random() * 300) + 150); 
+      await sleep(400); // ⚡ Only lags hackers, legitimate users get 0 delay
       coreOutput = firewallCheck.response;
     } else {
       const rawAiResponse = await processAiPipeline(prompt);
@@ -72,7 +68,7 @@ export default async function handler(req) {
       JSON.stringify({
         status: "success",
         data: finalOutputWithTag,
-        metadata: { trace_id: traceId, signature, execution_ms: Date.now() - startTime }
+        metadata: { trace_id: traceId, signature: signature, execution_ms: Date.now() - startTime }
       }),
       {
         status: 200,
@@ -85,16 +81,13 @@ export default async function handler(req) {
     );
 
   } catch (criticalError) {
-    // If anything fails (like a missing import or bad syntax), it returns a 200 JSON with the exact bug.
     return new Response(
       JSON.stringify({ 
         status: "fatal_error", 
         owner: "@lakshitpatidar",
-        debug_info: criticalError.message,
-        hint: "Check if all files are in the correct folders (api/ and lib/)"
+        debug_info: criticalError.message
       }, null, 2), 
       { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
     );
   }
-                       }
-    
+                     }
