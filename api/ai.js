@@ -6,6 +6,7 @@ import { processAiPipeline } from '../lib/ai.js';
 export const config = { runtime: 'edge' };
 
 export default async function handler(req) {
+  // CORS Preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
   }
@@ -20,7 +21,7 @@ export default async function handler(req) {
           const b = JSON.parse(textBody);
           prompt = b.prompt || b.text || b.query || ""; 
         } catch(e) { 
-          prompt = textBody; 
+          prompt = textBody; // Fallback for raw text
         }
       }
     } else if (req.method === 'GET') {
@@ -30,11 +31,12 @@ export default async function handler(req) {
     // Silent parsing fail
   }
 
+  // Welcome / Empty Prompt screen
   if (!prompt || prompt.trim() === "") {
     return new Response(
       JSON.stringify({ 
         status: "success", 
-        data: "System is Active. Send your query.\n\n---\nDeveloper: @lakshitpatidar"
+        data: "System is Active. Send your query.\n\n\nDeveloper @lakshitpatidar"
       }), 
       { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
     );
@@ -45,16 +47,18 @@ export default async function handler(req) {
     const firewallCheck = checkInputFirewall(prompt);
 
     if (firewallCheck.triggered) {
-      await sleep(150); // Minimal delay
+      await sleep(100); // Super fast 100ms block
       coreOutput = firewallCheck.response;
     } else {
       const rawAiResponse = await processAiPipeline(prompt);
       coreOutput = aggressiveSanitize(rawAiResponse);
     }
 
+    // Attach Watermark
     const watermark = DEV_WATERMARKS[Math.floor(Math.random() * DEV_WATERMARKS.length)];
     const finalOutputWithTag = coreOutput + watermark;
 
+    // Pure Clean JSON Return
     return new Response(
       JSON.stringify({
         status: "success",
@@ -73,10 +77,10 @@ export default async function handler(req) {
     return new Response(
       JSON.stringify({ 
         status: "error", 
-        data: "System encountered an unexpected exception.\n\n---\nDeveloper: @lakshitpatidar"
+        data: "System encountered an unexpected exception.\n\n\nDeveloper @lakshitpatidar"
       }), 
       { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
     );
   }
-}
-  
+        }
+    
